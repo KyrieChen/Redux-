@@ -36,10 +36,11 @@ export default function applyMiddleware(...middlewares) {
       getState: store.getState,
       dispatch: (...args) => dispatch(...args)
     }
-
+    // 循环 middlewares 将 middlewareAPI 对象传入每个 middleware 函数中，因此 middleware 函数应该有两个参数 { dispatch, getState }
     chain = middlewares.map(middleware => middleware(middlewareAPI))
+    // compose 每个中间件，并传入 store 原来的 dispatch（注意这个 dispatch 只能接受 action 对象，不能是函数），返回经过 enhance 的 dispatch 方法
     dispatch = compose(...chain)(store.dispatch)
-
+    // return enhance 后的 store 对象，其中 dispatch 被 enhance
     return {
       ...store,
       dispatch
