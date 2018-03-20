@@ -29,19 +29,21 @@ import isPlainObject from './utils/isPlainObject'
  * and subscribe to changes.
  */
 export default function createStore(reducer, preloadedState, enhancer) {
+  //  处理当忽略 preloadedState 参数，直接传入 enhancer 函数的情况，基于这个处理我们可以直接这样使用 createStore(reducer, enhancer)
   if (typeof preloadedState === 'function' && typeof enhancer === 'undefined') {
     enhancer = preloadedState
     preloadedState = undefined
   }
-
+  //  当传入 enhancer 函数，则用传入的 enhancer 函数调用一下 createStore，这里的 enhancer 相当于一个高阶函数，返回一个加强版 createStore
   if (typeof enhancer !== 'undefined') {
     if (typeof enhancer !== 'function') {
+      //  enhancer 参数如果不是函数则报错
       throw new Error('Expected the enhancer to be a function.')
     }
 
     return enhancer(createStore)(reducer, preloadedState)
   }
-
+  //  传入的 reducer 必须要是函数
   if (typeof reducer !== 'function') {
     throw new Error('Expected the reducer to be a function.')
   }
@@ -50,7 +52,7 @@ export default function createStore(reducer, preloadedState, enhancer) {
   let currentState = preloadedState
   let currentListeners = []
   let nextListeners = currentListeners
-  let isDispatching = false
+  let isDispatching = false //  是否在执行 reducer
 
   function ensureCanMutateNextListeners() {
     if (nextListeners === currentListeners) {
@@ -65,13 +67,14 @@ export default function createStore(reducer, preloadedState, enhancer) {
    */
   function getState() {
     if (isDispatching) {
+      //  reducer 再执行，store.getState() 不能被调用，报错
       throw new Error(
         'You may not call store.getState() while the reducer is executing. ' +
           'The reducer has already received the state as an argument. ' +
           'Pass it down from the top reducer instead of reading it from the store.'
       )
     }
-
+    // 如果没在执行 reducer，则返回 currentState，该指初始化为传入的 preloadedState
     return currentState
   }
 
@@ -94,15 +97,17 @@ export default function createStore(reducer, preloadedState, enhancer) {
    * the listener is called. It is, however, guaranteed that all subscribers
    * registered before the `dispatch()` started will be called with the latest
    * state by the time it exits.
+   * 保证所有的监听器都注册在 dispatch() 启动之前，这样，在调用监听器的时候就会传入监听器所存在时间里最新的一次 state
    *
    * @param {Function} listener A callback to be invoked on every dispatch.
    * @returns {Function} A function to remove this change listener.
    */
   function subscribe(listener) {
+    //  参数 listener 必须为函数
     if (typeof listener !== 'function') {
       throw new Error('Expected the listener to be a function.')
     }
-
+    //  如果 reducer 在执行，则
     if (isDispatching) {
       throw new Error(
         'You may not call store.subscribe() while the reducer is executing. ' +
